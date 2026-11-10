@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Math Taboo: a free classroom vocabulary game. Get your team to say the math word without saying the words on the card.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Math Taboo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Nunito:wght@400;600;800&display=swap">
+<style>
+/* Layout: one chalkboard screen — scoreboard on top, the paper slip in the middle, round controls under it */
+:root {
+  --board: #1f3a32;
+  --board-deep: #172c26;
+  --chalk: #eef2ea;
+  --chalk-dim: #a9bbb1;
+  --yellow: #f3d36b;
+  --tx: #f3d36b;
+  --ty: #f5a3cf;
+  --team: var(--tx);
+  --red: #f08a7a;
+  --slip: #fbfaf5;
+  --ink: #23302b;
+  --ink-dim: #6b7a73;
+  --f-hand: "Kalam", "Comic Sans MS", cursive;
+  --f-body: "Nunito", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--board);
+  background-image: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.05), transparent 60%), radial-gradient(ellipse at 80% 90%, rgba(0,0,0,.18), transparent 55%);
+  color: var(--chalk);
+  font-family: var(--f-body);
+  font-size: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
+h1 { font-family: var(--f-hand); font-weight: 700; font-size: 2.2rem; margin: 0; line-height: 1; letter-spacing: .5px; }
+h1 span { color: var(--chalk-dim); }
+body.team-y { --team: var(--ty); }
+.tag { color: var(--chalk-dim); font-size: .9rem; }
+
+.scores { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+.team { border: 2px dashed rgba(238,242,234,.25); border-radius: 10px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; transition: border-color .2s, background .2s; }
+.team.up { border-style: solid; border-color: var(--tx); background: rgba(243,211,107,.08); }
+#teamY.up { border-color: var(--ty); background: rgba(245,163,207,.08); }
+.team .name { font-family: var(--f-hand); font-size: 1.4rem; }
+.team .pts { font-family: var(--f-hand); font-weight: 700; font-size: 2.2rem; font-variant-numeric: tabular-nums; line-height: 1; }
+.team.up .name::after { content: " · up"; color: var(--tx); font-size: 1rem; }
+#teamY.up .name::after { color: var(--ty); }
+
+.stage { display: grid; grid-template-columns: 1fr; }
+@media (max-width: 560px) {
+  .scores { gap: 8px; }
+  .team { flex-direction: column; gap: 2px; padding: 8px 10px; }
+  .team .name { font-size: 1.1rem; }
+  .ring { width: 86px !important; height: 86px !important; }
+  .ring .num { font-size: 2rem !important; }
+}
+
+.slip {
+  background: var(--slip); color: var(--ink);
+  border-radius: 3px; padding: 26px 24px 22px;
+  transform: rotate(-1.2deg);
+  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+  min-height: 300px; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  position: relative;
+}
+.slip::after { content: ""; position: absolute; inset: auto 0 0 0; height: 10px;
+  background: linear-gradient(135deg, transparent 33%, var(--board) 33% 66%, transparent 66%) 0 0/14px 10px; opacity: .25; }
+.target { font-family: var(--f-hand); font-weight: 700; font-size: clamp(1.8rem, 6vw, 2.6rem); line-height: 1.1;
+  border: 3px solid var(--ink); padding: 6px 18px 2px; text-align: center; text-wrap: balance; max-width: 100%; overflow-wrap: anywhere; }
+.taboo-label { font-size: .75rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-dim); }
+.taboo { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; text-align: center; }
+.taboo li { font-family: var(--f-hand); font-size: 1.55rem; line-height: 1.2; }
+.part-note { font-size: .8rem; color: var(--ink-dim); font-style: italic; }
+.grade-chip { position: absolute; top: 10px; right: 12px; font-size: .72rem; font-weight: 800; letter-spacing: .08em; color: var(--ink-dim); }
+.cover { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; }
+.cover .big { font-family: var(--f-hand); font-size: 1.8rem; line-height: 1.15; text-wrap: balance; }
+.sketch { width: 100%; max-width: 360px; height: auto; background: transparent; }
+.sk-lbl { font-family: var(--f-hand); font-size: 15px; font-weight: 700; }
+.cover p { margin: 0; color: var(--ink-dim); max-width: 32ch; }
+
+.clock { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ring { width: 116px; height: 116px; position: relative; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 9; }
+.ring .track { stroke: rgba(238,242,234,.15); }
+.ring .bar { stroke: var(--team); stroke-linecap: round; transition: stroke .3s; }
+.ring.low .num { animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+.ring .num { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-hand); font-weight: 700; font-size: 2.6rem; font-variant-numeric: tabular-nums; }
+.round-pts { color: var(--chalk-dim); font-size: .85rem; white-space: nowrap; }
+.round-pts b { color: var(--chalk); font-size: 1.1rem; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 12px; }
+button { font-family: var(--f-body); font-weight: 800; font-size: 1.05rem; border-radius: 10px; padding: 14px 22px; cursor: pointer; border: 2px solid transparent; }
+button:focus-visible, .chip:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
+.go { background: var(--team); color: var(--board-deep); flex: 1 1 200px; }
+.got { background: var(--chalk); color: var(--board-deep); flex: 2 1 200px; }
+.buzz { background: transparent; color: var(--red); border-color: var(--red); flex: 1 1 140px; }
+.skip { background: transparent; color: var(--chalk-dim); border-color: rgba(238,242,234,.3); flex: 0 1 110px; }
+button:active { transform: translateY(1px); }
+
+.settings { border-top: 2px dashed rgba(238,242,234,.18); padding-top: 16px; display: grid; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.row .lbl { font-size: .8rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--chalk-dim); min-width: 90px; }
+.chip { background: transparent; color: var(--chalk); border: 2px solid rgba(238,242,234,.3); border-radius: 999px; padding: 9px 16px; min-height: 44px; font-size: .95rem; font-weight: 600; }
+.chip[aria-pressed="true"] { background: var(--chalk); color: var(--board-deep); border-color: var(--chalk); }
+.rules { color: var(--chalk-dim); font-size: .95rem; line-height: 1.55; margin: 0; }
+.rules b { color: var(--chalk); }
+.panel summary { cursor: pointer; list-style: none; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding-block: 4px; }
+.panel summary::-webkit-details-marker { display: none; }
+.sum-t { font-size: .8rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--chalk-dim); }
+.sum-t::before { content: "+ "; }
+.panel[open] .sum-t::before { content: "\2212  "; }
+.sum-s { font-size: .9rem; color: var(--chalk); }
+.panel summary:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; border-radius: 4px; }
+.panel-body { display: grid; gap: 14px; padding-top: 12px; }
+.foot { color: var(--chalk-dim); font-size: .8rem; line-height: 1.7; text-align: center; opacity: .85; }
+.is-full.is-class .foot { display: none; }
+.foot a { color: var(--chalk-dim); text-underline-offset: 2px; }
+.chip.danger { border-color: var(--red); color: var(--red); }
+.is-class .hide-class { display: none; }
+.is-full.is-class .settings, .is-full.is-class #fullBtn { display: none; }
+.hdr-right { display: flex; align-items: center; gap: 12px; }
+header { align-items: center !important; }
+.is-full .wrap { padding-block: 12px; }
+.is-class .wrap { max-width: 1500px; gap: 28px; }
+.is-class h1 { font-size: clamp(2.2rem, 3.5vw, 3.4rem); }
+.is-class .scores { grid-template-columns: 1fr auto 1fr; align-items: center; gap: clamp(12px, 3vw, 40px); }
+.is-class .team { padding: clamp(10px, 1.5vw, 22px) clamp(14px, 2.5vw, 36px); border-radius: 16px; border-width: 3px; }
+.is-class .team .name { font-size: clamp(1.4rem, 3.2vw, 3rem); }
+.is-class .team.up .name::after { font-size: .6em; }
+.is-class .team .pts { font-size: clamp(3rem, 9vw, 8.5rem); }
+.is-class .ring { width: clamp(110px, 15vw, 230px); height: clamp(110px, 15vw, 230px); }
+.is-class .ring .num { font-size: clamp(2.6rem, 6vw, 5.5rem); }
+.is-class .round-pts { font-size: clamp(.95rem, 1.4vw, 1.4rem); }
+.is-class .stage { grid-template-columns: 1fr; }
+.is-class .slip { min-height: 0; padding: clamp(20px, 3vw, 44px) clamp(20px, 4vw, 60px); gap: 10px; }
+.is-class .cover .big { font-size: clamp(2rem, 4.2vw, 3.8rem); }
+.is-class .sketch { max-width: min(820px, 100%); }
+.note { font-size: .8rem; color: var(--chalk-dim); opacity: .8; }
+@media (prefers-reduced-motion: reduce) { .slip { transform: none; } * { transition: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Math <span>Taboo</span></h1>
+    <div class="hdr-right"><span class="tag" id="deckInfo"></span><button class="chip" id="fullBtn">Full screen</button></div>
+  </header>
+  <p class="note" id="fullNote" hidden>Full screen isn't available here. Use the browser's own: Control + Command + F on a Mac, F11 on Windows, or the full-screen key on the top row of a Chromebook. On an iPad, tap Share, then Add to Home Screen, and open it from there.</p>
+
+  <div class="scores" id="scores">
+    <div class="team up" id="teamX"><span class="name">Team X</span><span class="pts" id="ptsX">0</span></div>
+    <div class="team" id="teamY"><span class="name">Team Y</span><span class="pts" id="ptsY">0</span></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="slip" id="slip" aria-live="polite"></div>
+    <div class="clock" id="clock">
+      <div class="ring" id="ring">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="44"></circle><circle class="bar" id="bar" cx="50" cy="50" r="44"></circle></svg>
+        <div class="num" id="secs">60</div>
+      </div>
+      <div class="round-pts">This round: <b id="roundPts">0</b></div>
+    </div>
+  </div>
+
+  <div class="controls" id="controls"></div>
+
+  <section class="settings">
+    <details class="panel" id="setPanel">
+      <summary><span class="sum-t">Settings</span><span class="sum-s" id="setSum"></span></summary>
+      <div class="panel-body">
+        <div class="row" id="roleRow"><span class="lbl">This screen</span></div>
+        <p class="note hide-class">Using a projector? Open this page in a second window and set it to Class. Drag that window to the projector (set the display to Extend, not Mirror). The class sees scores and the timer; only your laptop shows the card.</p>
+        <div class="row hide-class" id="gradeRow"><span class="lbl">Cards</span></div>
+        <div class="row hide-class" id="timeRow"><span class="lbl">Round</span></div>
+        <div class="row hide-class"><span class="lbl">Skips</span>
+          <button class="chip" id="skipToggle" aria-pressed="false">Not allowed</button>
+        </div>
+        <div class="row hide-class"><span class="lbl">Scores</span>
+          <button class="chip" id="resetBtn">New game</button>
+        </div>
+      </div>
+    </details>
+    <details class="panel hide-class">
+      <summary><span class="sum-t">How to play</span></summary>
+      <div class="panel-body">
+        <p class="rules">Split the class into Team X and Team Y. One player comes up and reads the slip—facing away from the class—while the teacher stands beside them as referee. Describe as many words as you can before time runs out. Say the boxed word or any word under it—or even part of one—and the round ends. Hand gestures are fine. Skipping isn't, unless you turn it on.</p>
+        <p class="rules">On a laptop, the keyboard works too: Space for Got it, T for Taboo!, S for Skip, and Enter to start the next round.</p>
+      </div>
+    </details>
+  </section>
+  <footer class="foot">Copyright © 2026 Math Taboo by Fawn Nguyen.<br>Cards and text: <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></footer>
+</div>
+
+<script>
+const CARDS = [["ratio", "6", ["compare", "colon", "fraction", "to"]], ["rate", "6", ["per", "speed", "time", "ratio"]], ["unit rate", "6", ["one", "per", "each", "price"]], ["percent", "6", ["hundred", "out of", "symbol", "fraction"]], ["equivalent ratios", "6", ["same", "equal", "multiply", "scale"]], ["double number line", "6", ["two", "above", "parallel", "ratio"]], ["quotient", "6", ["divide", "answer", "division", "result"]], ["reciprocal", "6", ["flip", "upside down", "fraction", "one"]], ["greatest common factor", "6", ["largest", "divide", "both", "share"]], ["least common multiple", "6", ["smallest", "both", "times", "denominator"]], ["distributive property", "6", ["multiply", "parentheses", "each", "outside"]], ["integer", "6", ["whole", "negative", "positive", "number"]], ["opposite", "6", ["negative", "sign", "flip", "zero"]], ["absolute value", "6", ["distance", "zero", "positive", "bars"]], ["coordinate plane", "6", ["grid", "axis", "x", "y"]], ["quadrant", "6", ["four", "section", "graph", "quarter"]], ["ordered pair", "6", ["x", "y", "point", "parentheses"]], ["rational number", "6", ["fraction", "decimal", "integer", "quotient"]], ["exponent", "6", ["power", "small", "raised", "times"]], ["expression", "6", ["equal", "numbers", "variables", "operation"]], ["equation", "6", ["equal", "sign", "both", "sides"]], ["variable", "6", ["letter", "x", "unknown", "stands for"]], ["coefficient", "6", ["number", "front", "variable", "multiply"]], ["term", "6", ["part", "plus", "expression", "separate"]], ["solution", "6", ["answer", "solve", "true", "value"]], ["inequality", "6", ["greater", "less", "symbol", "compare"]], ["independent variable", "6", ["input", "x", "cause", "change"]], ["area", "6", ["square", "units", "inside", "cover"]], ["polygon", "6", ["sides", "shape", "closed", "straight"]], ["parallelogram", "6", ["sides", "opposite", "rectangle", "slanted"]], ["trapezoid", "6", ["one pair", "parallel", "four", "sides"]], ["volume", "6", ["inside", "cube", "fill", "space"]], ["rectangular prism", "6", ["box", "faces", "length", "3D"]], ["surface area", "6", ["outside", "faces", "wrap", "net"]], ["net", "6", ["unfold", "flat", "faces", "3D"]], ["mean", "6", ["average", "add", "divide", "total"]], ["median", "6", ["middle", "order", "center", "numbers"]], ["mean absolute deviation", "6", ["average", "distance", "from", "spread"]], ["interquartile range", "6", ["quarter", "middle", "50%", "box plot"]], ["box plot", "6", ["whisker", "quartile", "median", "five"]], ["histogram", "6", ["bar", "graph", "interval", "bin"]], ["dot plot", "6", ["line", "above", "stack", "marks"]], ["statistical question", "6", ["data", "survey", "vary", "answer"]], ["outlier", "6", ["far", "away", "extreme", "different"]], ["range", "6", ["biggest", "smallest", "subtract", "spread"]], ["proportional relationship", "7", ["constant", "ratio", "straight line", "origin"]], ["constant of proportionality", "7", ["k", "unit rate", "ratio", "y over x"]], ["percent increase", "7", ["up", "grow", "more", "original"]], ["percent decrease", "7", ["down", "less", "drop", "original"]], ["discount", "7", ["sale", "off", "price", "save"]], ["markup", "7", ["store", "price", "raise", "more"]], ["sales tax", "7", ["extra", "buy", "government", "percent"]], ["tip", "7", ["waiter", "restaurant", "service", "percent"]], ["commission", "7", ["salesperson", "earn", "percent", "sell"]], ["simple interest", "7", ["bank", "borrow", "rate", "principal"]], ["percent error", "7", ["wrong", "actual", "estimate", "difference"]], ["scale drawing", "7", ["map", "model", "smaller", "ratio"]], ["scale factor", "7", ["multiply", "bigger", "smaller", "times"]], ["additive inverse", "7", ["opposite", "zero", "negative", "sum"]], ["repeating decimal", "7", ["forever", "bar", "pattern", "again"]], ["terminating decimal", "7", ["end", "stop", "finite", "digits"]], ["like terms", "7", ["same", "variable", "combine", "add"]], ["equivalent expressions", "7", ["same", "equal", "simplify", "value"]], ["circumference", "7", ["circle", "around", "pi", "distance"]], ["radius", "7", ["center", "half", "diameter", "circle"]], ["diameter", "7", ["circle", "across", "center", "radius"]], ["pi", "7", ["3.14", "circle", "circumference", "Greek"]], ["complementary angles", "7", ["90", "right", "add", "two"]], ["supplementary angles", "7", ["180", "straight", "add", "two"]], ["vertical angles", "7", ["across", "X", "intersect", "equal"]], ["adjacent angles", "7", ["next to", "share", "side", "vertex"]], ["cross section", "7", ["slice", "cut", "inside", "shape"]], ["pyramid", "7", ["triangle", "point", "Egypt", "base"]], ["right prism", "7", ["two bases", "faces", "90", "3D"]], ["population", "7", ["everyone", "whole", "group", "sample"]], ["sample", "7", ["part", "group", "survey", "population"]], ["random sample", "7", ["chance", "pick", "fair", "survey"]], ["probability", "7", ["chance", "likely", "odds", "happen"]], ["sample space", "7", ["all", "outcomes", "list", "possible"]], ["outcome", "7", ["result", "happen", "roll", "possible"]], ["compound event", "7", ["two", "both", "and", "together"]], ["tree diagram", "7", ["branch", "outcomes", "list", "draw"]], ["simulation", "7", ["model", "repeat", "pretend", "trials"]], ["relative frequency", "7", ["experiment", "times", "out of", "trials"]], ["theoretical probability", "7", ["expected", "should", "fraction", "outcomes"]], ["irrational number", "8", ["pi", "decimal", "forever", "fraction"]], ["square root", "8", ["times", "itself", "radical", "symbol"]], ["cube root", "8", ["three", "times", "itself", "radical"]], ["perfect square", "8", ["times", "itself", "whole", "root"]], ["approximation", "8", ["estimate", "close", "about", "round"]], ["radical", "8", ["square root", "symbol", "check", "sign"]], ["scientific notation", "8", ["ten", "power", "big", "decimal"]], ["slope", "8", ["steep", "rise", "run", "line"]], ["y-intercept", "8", ["y", "axis", "cross", "line"]], ["rate of change", "8", ["slope", "speed", "per", "steep"]], ["initial value", "8", ["start", "beginning", "b", "zero"]], ["linear equation", "8", ["straight", "y = mx + b", "graph", "slope"]], ["system of equations", "8", ["two", "intersect", "solve", "both"]], ["function", "8", ["input", "output", "rule", "machine"]], ["nonlinear function", "8", ["curve", "straight", "bend", "graph"]], ["translation", "8", ["slide", "move", "shift", "same"]], ["rotation", "8", ["turn", "spin", "degrees", "center"]], ["reflection", "8", ["flip", "mirror", "line", "over"]], ["dilation", "8", ["bigger", "smaller", "scale", "enlarge"]], ["congruent", "8", ["same", "size", "shape", "equal"]], ["similar", "8", ["same", "shape", "size", "scale"]], ["parallel lines", "8", ["never", "meet", "same", "direction"]], ["transversal", "8", ["line", "cross", "parallel", "two"]], ["alternate interior angles", "8", ["inside", "opposite", "parallel", "Z"]], ["exterior angle", "8", ["outside", "extend", "remote", "180"]], ["triangle angle sum", "8", ["180", "add", "three", "inside"]], ["Pythagorean theorem", "8", ["a squared", "right triangle", "hypotenuse", "c"]], ["hypotenuse", "8", ["longest", "triangle", "right", "side"]], ["leg", "8", ["side", "right", "triangle", "short"]], ["cone", "8", ["ice cream", "point", "circle", "party hat"]], ["cylinder", "8", ["can", "circle", "tube", "round"]], ["sphere", "8", ["ball", "round", "globe", "circle"]], ["scatter plot", "8", ["dots", "points", "graph", "data"]], ["line of best fit", "8", ["trend", "through", "scatter", "data"]], ["positive association", "8", ["up", "both", "increase", "trend"]], ["negative association", "8", ["down", "decrease", "one", "trend"]], ["cluster", "8", ["group", "close", "together", "bunch"]], ["two-way table", "8", ["rows", "columns", "categories", "grid"]], ["bivariate data", "8", ["two", "variables", "pairs", "scatter"]], ["outlier", "8", ["far", "away", "extreme", "different"]], ["polynomial", "Algebra", ["terms", "many", "x", "add"]], ["monomial", "Algebra", ["one", "term", "single", "x"]], ["binomial", "Algebra", ["two", "terms", "plus", "pair"]], ["trinomial", "Algebra", ["three", "terms", "quadratic", "plus"]], ["factoring", "Algebra", ["multiply", "break", "parentheses", "divide"]], ["difference of squares", "Algebra", ["minus", "a²", "conjugate", "factor"]], ["quadratic", "Algebra", ["squared", "parabola", "x²", "degree"]], ["parabola", "Algebra", ["U", "curve", "quadratic", "vertex"]], ["vertex", "Algebra", ["top", "bottom", "turn", "maximum"]], ["axis of symmetry", "Algebra", ["middle", "mirror", "vertical", "line"]], ["zeros", "Algebra", ["roots", "x-intercepts", "cross", "solutions"]], ["x-intercept", "Algebra", ["axis", "cross", "zero", "horizontal"]], ["quadratic formula", "Algebra", ["b", "square root", "2a", "plus or minus"]], ["completing the square", "Algebra", ["add", "perfect", "half", "b"]], ["discriminant", "Algebra", ["b squared", "4ac", "under", "solutions"]], ["degree", "Algebra", ["highest", "exponent", "power", "biggest"]], ["leading coefficient", "Algebra", ["first", "front", "highest", "number"]], ["maximum", "Algebra", ["highest", "top", "peak", "most"]], ["exponential growth", "Algebra", ["double", "multiply", "fast", "increase"]], ["exponential decay", "Algebra", ["half", "shrink", "decrease", "multiply"]], ["domain", "Algebra", ["input", "x", "values", "allowed"]], ["range", "Algebra", ["output", "y", "values", "set"]], ["function notation", "Algebra", ["f", "of x", "parentheses", "input"]], ["inverse function", "Algebra", ["undo", "switch", "reflect", "opposite"]], ["arithmetic sequence", "Algebra", ["add", "same", "pattern", "difference"]], ["geometric sequence", "Algebra", ["multiply", "ratio", "pattern", "same"]], ["common difference", "Algebra", ["add", "same", "sequence", "subtract"]], ["common ratio", "Algebra", ["multiply", "divide", "same", "sequence"]], ["piecewise function", "Algebra", ["parts", "different", "rules", "split"]], ["slope-intercept form", "Algebra", ["y = mx + b", "m", "b", "line"]], ["point-slope form", "Algebra", ["x₁", "y₁", "m", "line"]], ["standard form", "Algebra", ["Ax", "By", "C", "equals"]], ["literal equation", "Algebra", ["letters", "formula", "solve for", "variables"]], ["system of inequalities", "Algebra", ["shade", "overlap", "region", "two"]], ["rational exponent", "Algebra", ["fraction", "root", "power", "denominator"]], ["correlation coefficient", "Algebra", ["r", "strong", "weak", "line"]], ["residual", "Algebra", ["leftover", "actual", "predicted", "difference"]], ["standard deviation", "Algebra", ["spread", "mean", "average", "sigma"]]];
+const GRADES = ["All","6","7","8","Algebra"];
+const TIMES = [30,60,90];
+let grade = "All", roundLen = 60, skipsOn = false;
+let scores = {X:0,Y:0}, team = "X", deck = [], card = null;
+let state = "ready", left = 60, roundPts = 0, timer = null;
+const $ = id => document.getElementById(id);
+let role = "both";
+try { role = sessionStorage.getItem("mt-role") || "both"; } catch(e){}
+let bc = null; try { bc = new BroadcastChannel("math-taboo"); } catch(e){}
+function send(){ if(bc && role!=="class") try{ bc.postMessage({type:"state", s:{scores, team, state, left, roundLen, roundPts, endMsg}}); }catch(e){} }
+if(bc) bc.onmessage = e => {
+  const m = e.data || {};
+  if(m.type==="hello" && role!=="class") send();
+  if(m.type==="state" && role==="class"){ ({scores, team, state, left, roundLen, roundPts, endMsg} = m.s); render(); }
+};
+const C = 2*Math.PI*44;
+$("bar").style.strokeDasharray = C;
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function pool(){ return CARDS.filter(c => grade==="All" || c[1]===grade); }
+function draw(){ if(!deck.length) deck = shuffle(pool().slice()); card = deck.pop(); }
+function esc(s){ return s.replace(/[&<>"]/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])); }
+
+let ctx;
+function beep(f, d){ try{ ctx = ctx || new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.value=f; o.connect(g); g.connect(ctx.destination); g.gain.setValueAtTime(.15,ctx.currentTime); g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+d); o.start(); o.stop(ctx.currentTime+d);}catch(e){} }
+
+function renderClock(){
+  $("secs").textContent = left;
+  $("bar").style.strokeDashoffset = C*(1-left/roundLen);
+  $("ring").classList.toggle("low", state==="playing" && left<=10);
+  $("roundPts").textContent = roundPts;
+  send();
+}
+function renderScores(){
+  $("ptsX").textContent = scores.X; $("ptsY").textContent = scores.Y;
+  document.body.classList.toggle("team-y", team==="Y");
+  $("teamX").classList.toggle("up", team==="X"); $("teamY").classList.toggle("up", team==="Y");
+}
+function renderSlip(){
+  const s = $("slip");
+  if(state==="playing" && role==="class"){
+    s.innerHTML = `<div class="cover"><div class="big">Team ${team}, go!</div>${sketch(team)}</div>`;
+  } else if(state==="playing"){
+    s.innerHTML = `<span class="grade-chip">${card[1]==="Algebra"?"ALGEBRA 1":"GRADE "+card[1]}</span>
+      <div class="target">${esc(card[0])}</div>
+      <div class="taboo-label">Can't say</div>
+      <ul class="taboo">${card[2].map(w=>`<li>${esc(w)}</li>`).join("")}</ul>
+      <div class="part-note">No part of any word on this card, either.</div>`;
+  } else if(state==="ready"){
+    s.innerHTML = `<div class="cover"><div class="big">Team ${team}, send someone up.</div>${sketch(team)}</div>`;
+  } else {
+    s.innerHTML = `<div class="cover"><div class="big">${esc(endMsg)}</div><p>Team ${team} got ${roundPts} this round. Team ${team==="X"?"Y":"X"} is up next.</p></div>`;
+  }
+}
+function renderControls(){
+  const c = $("controls");
+  if(role==="class"){ c.innerHTML = ""; return; }
+  if(state==="playing"){
+    c.innerHTML = `<button class="got" id="got">Got it</button><button class="buzz" id="buzz">Taboo!</button>${skipsOn?'<button class="skip" id="skip">Skip</button>':""}`;
+    $("got").onclick = () => { roundPts++; scores[team]++; beep(880,.12); draw(); render(); };
+    $("buzz").onclick = () => end("Taboo! Round over.");
+    if(skipsOn) $("skip").onclick = () => { draw(); render(); };
+  } else if(state==="ready"){
+    c.innerHTML = `<button class="go" id="go">Start round · ${roundLen} seconds</button>`;
+    $("go").onclick = start;
+  } else {
+    c.innerHTML = `<button class="go" id="next" style="background: var(--${team==="X"?"ty":"tx"})">Team ${team==="X"?"Y":"X"}, you're up</button>`;
+    $("next").onclick = () => { team = team==="X"?"Y":"X"; state="ready"; left=roundLen; roundPts=0; render(); };
+  }
+}
+function sketch(t){
+  const d = t==="X" ? -1 : 1, xd = 170 + d*40, tx = 170;
+  const heads = (xs, y, on, col) => xs.map(x=>`<circle cx="${x}" cy="${y}" r="7" fill="${on?col:'none'}"/>`).join("");
+  const L = t==="X", R = !L;
+  const goal = L ? [76,148] : [264,148];
+  return `<svg class="sketch" viewBox="0 0 340 210" role="img" aria-label="The teacher holds the laptop at the front of the room. The clue-giver stands beside her, sees the screen, and turns toward Team ${t}. Team X sits on the left, Team Y on the right." fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="80" y="6" width="180" height="18" rx="2" stroke-width="1.6"/>
+    <circle cx="${tx}" cy="52" r="10"/>
+    <circle cx="${tx+1}" cy="39" r="4.5"/>
+    <path d="M${tx-7} 43 L${tx+9} 34" stroke-width="1.8"/>
+    <circle cx="${tx-4}" cy="51" r="3.2" stroke-width="1.5"/><circle cx="${tx+4}" cy="51" r="3.2" stroke-width="1.5"/>
+    <path d="M${tx-0.8} 51 h1.6 M${tx-7.2} 50.5 l-2.5 -1 M${tx+7.2} 50.5 l2.5 -1" stroke-width="1.3"/>
+    <path d="M${tx-3.5} 57 q3.5 2.8 7 0" stroke-width="1.5"/>
+    <path d="M${tx} 62 V102 M${tx} 102 L${tx-10} 132 M${tx} 102 L${tx+10} 132"/>
+    <path d="M${tx} 72 L${tx-14} 86 M${tx} 72 L${tx+14} 86"/>
+    <rect x="${tx-17}" y="70" width="34" height="22" rx="2" fill="var(--slip)"/>
+    <path d="M${tx-21} 94 H${tx+21}"/>
+    <circle cx="${tx}" cy="81" r="2" fill="var(--ink)" stroke="none"/>
+    <circle cx="${xd}" cy="58" r="9"/>
+    <path d="M${xd-d*7} 52 q${-d*9} 3 ${-d*8} 14" stroke-width="2"/>
+    <circle cx="${xd+d*4}" cy="56" r="1.6" fill="var(--ink)" stroke="none"/>
+    <path d="M${xd+d*2} 52.5 l${d*4} -1" stroke-width="1.3"/>
+    <path d="M${xd+d*8.5} 56 l${d*3} 4 l${-d*3} 1" stroke-width="1.6"/>
+    <ellipse cx="${xd+d*5.5}" cy="63.5" rx="1.8" ry="1.4" fill="var(--ink)" stroke="none"/>
+    <path d="M${xd} 67 V104 M${xd} 104 L${xd-9} 132 M${xd} 104 L${xd+9} 132"/>
+    <path d="M${xd} 77 L${xd+d*12} 86 L${xd+d*22} 96 M${xd} 77 L${xd-d*5} 92 L${xd-d*3} 104"/>
+    <path d="M${xd-d*1} 55 Q${(xd+tx)/2} 50 ${tx-d*16} 72" stroke-dasharray="3 5" stroke-width="1.6"/>
+    <path d="M${xd+d*15} 64 q${d*5} 2 ${d*4} 9 M${xd+d*21} 62 q${d*8} 4 ${d*6} 15" stroke-width="1.8"/>
+    <path d="M${xd+d*10} 116 Q${xd+d*30} 132 ${goal[0]+(L?24:-24)} ${goal[1]-6}" stroke-width="1.8"/>
+    <path d="M${goal[0]+(L?24:-24)} ${goal[1]-6} l${L?10:-10} -2 M${goal[0]+(L?24:-24)} ${goal[1]-6} l${L?4:-4} -9" stroke-width="1.8"/>
+    ${heads([34,56,78,100,122],166,L,'var(--tx)')}${heads([45,67,89,111],186,L,'var(--tx)')}
+    ${heads([218,240,262,284,306],166,R,'var(--ty)')}${heads([229,251,273,295],186,R,'var(--ty)')}
+    <text x="78" y="208" text-anchor="middle" stroke="none" fill="var(--ink)" class="sk-lbl">Team X</text>
+    <text x="262" y="208" text-anchor="middle" stroke="none" fill="var(--ink)" class="sk-lbl">Team Y</text>
+  </svg>`;
+}
+function render(){ renderScores(); renderSlip(); renderControls(); renderClock(); }
+let endMsg = "";
+let wake = null;
+function start(){
+  try { navigator.wakeLock && navigator.wakeLock.request("screen").then(w => wake = w).catch(()=>{}); } catch(e){}
+  state="playing"; left=roundLen; roundPts=0; draw(); beep(660,.15); render();
+  clearInterval(timer);
+  timer = setInterval(()=>{ left--; if(left<=0){ left=0; end("Time!"); } else { if(left<=3) beep(520,.08); renderClock(); } },1000);
+}
+function end(msg){ clearInterval(timer); try { wake && wake.release(); } catch(e){} wake = null; endMsg = msg; state="done"; beep(220,.5); render(); }
+
+function chips(rowId, items, cur, label, onPick){
+  const row = $(rowId);
+  row.querySelectorAll(".chip").forEach(b=>b.remove());
+  items.forEach(v=>{
+    const b = document.createElement("button"); b.className="chip"; b.id = rowId+"-"+v;
+    b.textContent = label(v); b.setAttribute("aria-pressed", v===cur);
+    b.onclick = () => onPick(v); row.appendChild(b);
+  });
+}
+function drawSettings(){
+  $("setSum").textContent = role==="class" ? "Class screen" : `${grade==="All"?"All cards":(grade==="Algebra"?"Algebra 1":"Grade "+grade)} · ${roundLen} sec · ${skipsOn?"skips on":"no skips"}`;
+  document.body.classList.toggle("is-class", role==="class");
+  $("scores").insertBefore($("clock"), $("teamY"));
+  chips("roleRow", ["both","class","teacher"], role, v => ({both:"One screen", class:"Class (projector)", teacher:"Teacher (laptop)"})[v], v => {
+    role = v; try { sessionStorage.setItem("mt-role", v); } catch(e){}
+    drawSettings(); render();
+    if(v==="class" && bc) try{ bc.postMessage({type:"hello"}); }catch(e){}
+  });
+  chips("gradeRow", GRADES, grade, v => v==="All"?"All":(v==="Algebra"?"Algebra 1":"Grade "+v), v => { grade=v; deck=[]; drawSettings(); updateInfo(); });
+  chips("timeRow", TIMES, roundLen, v => v+" sec", v => { roundLen=v; if(state!=="playing"){ left=v; render(); } drawSettings(); });
+  $("skipToggle").textContent = skipsOn ? "Allowed" : "Not allowed";
+  $("skipToggle").setAttribute("aria-pressed", skipsOn);
+}
+function updateInfo(){ $("deckInfo").textContent = `${pool().length} cards`; }
+$("fullBtn").onclick = async () => {
+  try {
+    const el = document.documentElement;
+    if (document.fullscreenElement || document.webkitFullscreenElement) await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else if (el.requestFullscreen) await el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else throw new Error("unsupported");
+  } catch(e) { $("fullNote").hidden = false; }
+};
+const onFull = () => {
+  const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  document.body.classList.toggle("is-full", on);
+  $("fullBtn").textContent = on ? "Exit full screen" : "Full screen";
+};
+document.addEventListener("fullscreenchange", onFull);
+document.addEventListener("webkitfullscreenchange", onFull);
+$("skipToggle").onclick = () => { skipsOn=!skipsOn; drawSettings(); if(state==="playing") renderControls(); };
+let armed = false, armT = null;
+function disarm(){ armed = false; clearTimeout(armT); $("resetBtn").textContent = "New game"; $("resetBtn").classList.remove("danger"); }
+$("resetBtn").onclick = () => {
+  if(!armed){ armed = true; $("resetBtn").textContent = "Sure? Click again to erase scores"; $("resetBtn").classList.add("danger"); armT = setTimeout(disarm, 4000); return; }
+  disarm(); clearInterval(timer); scores={X:0,Y:0}; team="X"; state="ready"; left=roundLen; roundPts=0; deck=[]; render(); };
+
+document.addEventListener("keydown", e => {
+  if (role==="class" || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.closest && e.target.closest("button, summary, input")) { if (e.key===" " || e.key==="Enter") return; }
+  const k = e.key.toLowerCase(); let b = null;
+  if (state==="playing") b = k===" " ? $("got") : k==="t" ? $("buzz") : k==="s" ? $("skip") : null;
+  else if (e.key==="Enter") b = $("go") || $("next");
+  if (b) { e.preventDefault(); b.click(); }
+});
+drawSettings(); updateInfo(); render();
+if(role==="class" && bc) try{ bc.postMessage({type:"hello"}); }catch(e){}
+</script>
+
+</body>
+</html>
