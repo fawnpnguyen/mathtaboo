@@ -127,6 +127,7 @@ button:active { transform: translateY(1px); }
 .foot { color: var(--chalk-dim); font-size: .8rem; line-height: 1.7; text-align: center; opacity: .85; }
 .is-full.is-class .foot { display: none; }
 .foot a { color: var(--chalk-dim); text-underline-offset: 2px; }
+.chip .cnt { opacity: .55; font-weight: 400; font-size: .85em; margin-left: 2px; }
 .chip.danger { border-color: var(--red); color: var(--red); }
 .is-class .hide-class { display: none; }
 .is-full.is-class .settings, .is-full.is-class #fullBtn { display: none; }
@@ -329,7 +330,7 @@ function chips(rowId, items, cur, label, onPick){
   row.querySelectorAll(".chip").forEach(b=>b.remove());
   items.forEach(v=>{
     const b = document.createElement("button"); b.className="chip"; b.id = rowId+"-"+v;
-    b.textContent = label(v); b.setAttribute("aria-pressed", v===cur);
+    b.innerHTML = label(v); b.setAttribute("aria-pressed", v===cur);
     b.onclick = () => onPick(v); row.appendChild(b);
   });
 }
@@ -342,7 +343,7 @@ function drawSettings(){
     drawSettings(); render();
     if(v==="class" && bc) try{ bc.postMessage({type:"hello"}); }catch(e){}
   });
-  chips("gradeRow", GRADES, grade, v => v==="All"?"All":(v==="Algebra"?"Algebra 1":"Grade "+v), v => { grade=v; deck=[]; drawSettings(); updateInfo(); });
+  chips("gradeRow", GRADES, grade, v => (v==="All"?"All":(v==="Algebra"?"Algebra 1":"Grade "+v)) + ` <span class="cnt">${CARDS.filter(c => v==="All" || c[1]===v).length}</span>`, v => { grade=v; deck=[]; drawSettings(); updateInfo(); });
   chips("timeRow", TIMES, roundLen, v => v+" sec", v => { roundLen=v; if(state!=="playing"){ left=v; render(); } drawSettings(); });
   $("skipToggle").textContent = skipsOn ? "Allowed" : "Not allowed";
   $("skipToggle").setAttribute("aria-pressed", skipsOn);
