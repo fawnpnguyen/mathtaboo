@@ -152,6 +152,7 @@ header { align-items: center !important; }
 .is-class .cover .big { font-size: clamp(2rem, 4.2vw, 3.8rem); }
 .is-class .sketch { max-width: min(820px, 100%); }
 .note { font-size: .8rem; color: var(--chalk-dim); opacity: .8; }
+.note.warn { color: var(--red); opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .slip { transform: none; } * { transition: none !important; } }
 </style>
 
@@ -189,7 +190,7 @@ header { align-items: center !important; }
         <div class="row" id="roleRow"><span class="lbl">This screen</span></div>
         <p class="note hide-class">Using a projector? Open this page in a second window and set it to Class. Drag that window to the projector (set the display to Extend, not Mirror). The class sees scores and the timer; only your laptop shows the card.</p>
         <div class="row hide-class" id="gradeRow"><span class="lbl">Cards</span></div>
-        <p class="note hide-class">Tap one grade or course, then tap more to mix them in. All brings back every card.</p>
+        <p class="note hide-class" id="gradeNote" aria-live="polite">Tap one grade or course, then up to two more to mix them in. All brings back every card.</p>
         <div class="row hide-class" id="timeRow"><span class="lbl">Round</span></div>
         <div class="row hide-class"><span class="lbl">Skips</span>
           <button class="chip" id="skipToggle" aria-pressed="false">Not allowed</button>
@@ -234,6 +235,14 @@ $("bar").style.strokeDasharray = C;
 function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function pool(){ return CARDS.filter(c => sel.has(c[1])); }
 function allOn(){ return sel.size===LEVELS.length; }
+const MAX_PICK = 3;
+let warnT = null;
+function gradeWarn(){
+  const n = $("gradeNote"); clearTimeout(warnT);
+  if(!n.dataset.tip) n.dataset.tip = n.textContent;
+  n.textContent = "Three at a time. Tap a lit one to turn it off first."; n.classList.add("warn");
+  warnT = setTimeout(() => { n.textContent = n.dataset.tip; n.classList.remove("warn"); }, 3500);
+}
 function gradeLabel(){
   if(allOn()) return "All cards";
   const n = LEVELS.filter(g => /^\d$/.test(g) && sel.has(g)).map(Number), runs = [];
@@ -362,6 +371,7 @@ function drawSettings(){
     if(v==="All") sel = new Set(LEVELS);
     else if(allOn()) sel = new Set([v]);
     else if(sel.has(v)) { if(sel.size>1) sel.delete(v); }
+    else if(sel.size>=MAX_PICK) { gradeWarn(); return; }
     else sel.add(v);
     deck=[]; drawSettings(); updateInfo();
     const b = $("gradeRow-"+v.replace(/\s+/g,"-")); if(b) b.focus();
