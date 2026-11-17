@@ -46,6 +46,11 @@ body {
 header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
 h1 { font-family: var(--f-hand); font-weight: 700; font-size: 2.2rem; margin: 0; line-height: 1; letter-spacing: .5px; }
 h1 span { color: var(--chalk-dim); }
+.home-link { color: inherit; text-decoration: none; border-radius: 6px; }
+.home-link:hover span, .home-link:focus-visible span { color: var(--chalk); }
+.home-link:focus-visible { outline: 3px solid var(--chalk); outline-offset: 4px; }
+.home-warn { font-size: .85rem; font-weight: 700; color: var(--red); }
+.home-warn:empty { display: none; }
 body.team-y { --team: var(--ty); }
 .tag { color: var(--chalk-dim); font-size: .9rem; }
 
@@ -167,7 +172,7 @@ header { align-items: center !important; }
 <body>
 <div class="wrap">
   <header>
-    <h1>Math <span>Taboo</span></h1>
+    <h1><a href="./" class="home-link" id="homeLink">Math <span>Taboo</span></a></h1><span class="home-warn" id="homeWarn" role="status" aria-live="polite"></span>
     <div class="hdr-right"><span class="tag" id="deckInfo"></span><button class="chip" id="fullBtn">Full screen</button></div>
   </header>
   <p class="note" id="fullNote" hidden>Full screen isn't available here. Use the browser's own: Control + Command + F on a Mac, F11 on Windows, or the full-screen key on the top row of a Chromebook. On an iPad, tap Share, then Add to Home Screen, and open it from there.</p>
@@ -418,13 +423,22 @@ document.addEventListener("webkitfullscreenchange", onFull);
 $("skipToggle").onclick = () => { skipsOn=!skipsOn; drawSettings(); if(state==="playing") renderControls(); };
 let armed = false, armT = null;
 function disarm(){ armed = false; clearTimeout(armT); $("resetBtn").textContent = "New game"; $("resetBtn").classList.remove("danger"); }
+let homeArmed = false, homeT = null;
+function homeDisarm(){ homeArmed = false; clearTimeout(homeT); $("homeWarn").textContent = ""; }
+$("homeLink").onclick = e => {
+  const inGame = role!=="class" && (state!=="ready" || roundPts || scores.X || scores.Y);
+  if(!inGame || homeArmed){ homeDisarm(); return; }
+  e.preventDefault(); homeArmed = true;
+  $("homeWarn").textContent = "Click the title again to end this game and start over";
+  homeT = setTimeout(homeDisarm, 4000);
+};
 $("resetBtn").onclick = () => {
   if(!armed){ armed = true; $("resetBtn").textContent = "Sure? Click again to erase scores"; $("resetBtn").classList.add("danger"); armT = setTimeout(disarm, 4000); return; }
   disarm(); clearInterval(timer); scores={X:0,Y:0}; team="X"; state="ready"; left=roundLen; roundPts=0; deck=[]; render(); };
 
 document.addEventListener("keydown", e => {
   if (role==="class" || e.metaKey || e.ctrlKey || e.altKey) return;
-  if (e.target.closest && e.target.closest("button, summary, input")) { if (e.key===" " || e.key==="Enter") return; }
+  if (e.target.closest && e.target.closest("a, button, summary, input")) { if (e.key===" " || e.key==="Enter") return; }
   const k = e.key.toLowerCase(); let b = null;
   if (state==="playing") b = k===" " ? $("got") : k==="t" ? $("buzz") : k==="s" ? $("skip") : null;
   else if (e.key==="Enter") b = $("go") || $("next");
